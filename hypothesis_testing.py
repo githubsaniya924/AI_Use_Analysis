@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import numpy as np
 import plotly.express as px
 import scipy.stats as stats
 import seaborn as sns
@@ -16,67 +17,59 @@ df = load_data()
 st.write("""
          ## Hypothesis Testing: AI Training vs Work Efficiency Score
          """)
-st.divider()
 
 st.write("""
-#### Does AI Training Significantly Impact Work Efficiency Scores?
+#### Assumption: AI Training Significantly Impact Work Efficiency Scores
 **Columns to Consider:**
 - "AI Training Received" (Categorical - Binary)
-- "Work Efficiency Score" (Continuous - Scale)
-           
-We use **Welch's t-test** to compare the mean **Work Efficiency Scores** of two independent groups:  
+- "Work Efficiency Score" (Ordinal - 1 to 10 scale)
+
+We use the **Mann-Whitney U test** (Wilcoxon rank-sum test) to compare the **Work Efficiency Scores** of two independent groups:  
 - **AI Trained Users** (Received AI Training)  
 - **Non-AI Trained Users** (Did Not Receive AI Training)  
 """)
 
-def t_test(df):
+def mann_whitney_test(df):
 
     #-------------------1---------------------#
     # Splitting the data into two groups based on AI Training
-    trained = df[df['AI Training Received'] == 'Yes']['Work Efficiency Score']
-    not_trained = df[df['AI Training Received'] == 'No']['Work Efficiency Score']
+    trained = df[df['AI Training Received'] == 'Yes']['Work Efficiency Scores']
+    not_trained = df[df['AI Training Received'] == 'No']['Work Efficiency Scores']
     
+    # Performing the Mann-Whitney U Test
+    u_stat, p_value = stats.mannwhitneyu(trained, not_trained, alternative='two-sided')
 
-    # Performing an independent t-test
-    t_stat, p_value = stats.ttest_ind(trained, not_trained, equal_var=False)  # Welch's t-test
-    
-    # Calculate mean and standard deviation
-    trained_mean = trained.mean()
-    trained_sd = trained.std()
-    not_trained_mean = not_trained.mean()
-    not_trained_sd = not_trained.std()
+    # Calculate median for better interpretation
+    trained_median = trained.median()
+    not_trained_median = not_trained.median()
 
-    # 📊 **Table: Mean and Standard Deviation**
-    st.write("Mean & Standard Deviation Table")
-
+    # **Table: Median Work Efficiency Scores**
+    st.write("### Median Work Efficiency Scores")
     stats_df = pd.DataFrame({
         "Group": ["Trained in AI", "Not Trained in AI"],
-        "Mean": [trained_mean, not_trained_mean],
-        "Standard Deviation": [trained_sd, not_trained_sd]
+        "Median": [trained_median, not_trained_median]
     })
-
     st.table(stats_df)
 
-
-    # 📊 **Generate Boxplot**
+    # **Generate Boxplot**
     fig, ax = plt.subplots(figsize=(6, 4))
-    plt.title("Work Efficiency Score Distribution")
-    sns.boxplot(x=df['AI Training Received'], y=df['Work Efficiency Score'], palette=["#E74C3C", "#2E86C1"], ax=ax)
-    ax.set_xlabel("AI Training Received", fontsize=10)
-    ax.set_ylabel("Work Efficiency Score", fontsize=10)
-    ax.set_title("Work Efficiency Score by AI Training Status", fontsize=12)
+    sns.boxplot(x=df['AI Training Received'], y=df['Work Efficiency Scores'], 
+                palette=["#ff7f0e", "#1f77b4"], ax=ax)  # Orange & Blue theme
+    
+    ax.set_xlabel("AI Training Received", fontsize=10, fontweight='bold')
+    ax.set_ylabel("Work Efficiency Scores", fontsize=10, fontweight='bold')
+    ax.set_title("Work Efficiency Score by AI Training Status", fontsize=12, fontweight='bold')
+    
     st.pyplot(fig)
-
     
     # Display results in Streamlit
-    st.write("""<u><b>By applying Welch-t test, we get the following result:</b></u>""", unsafe_allow_html=True)
-    st.write(f"**T-statistic:** {t_stat:.4f}")
+    st.write("""<u><b>By applying the Mann-Whitney U test, we get the following result:</b></u>""", unsafe_allow_html=True)
+    st.write(f"**U-statistic:** {u_stat:.4f}")
     st.write(f"**P-value:** {p_value:.4f}")
     st.write("""
              <i><b>If p-value < 0.05 → Reject H₀ → AI Training significantly impacts Work Efficiency Scores.  
              If p-value ≥ 0.05 → Fail to Reject H₀ → No significant impact.</b></i>  
              """, unsafe_allow_html=True)
-
 
     # Interpretation of results
     alpha = 0.05  # Significance level
@@ -84,18 +77,16 @@ def t_test(df):
         st.success("Therefore, Reject Null Hypothesis: AI Training **significantly impacts** Work Efficiency Score.")
     else:
         st.warning("Therefore, Fail to Reject Null Hypothesis: AI Training **does not significantly impact** Work Efficiency Score.")
-    
 
 # Run the hypothesis test
-
-t_test(df)
+mann_whitney_test(df)
 
 st.divider()
 
     #-------------------2------------------#
 
 st.write("""
-### **Does Frequent AI Usage Lead to More Job Promotions or Salary Increases?**
+### **Assumption: Frequent AI Usage Lead to More Job Promotions or Salary Increases**
 - **Dependent Variable:** Job Promotions / Salary Increases (**Binary: Yes/No**)  
 - **Independent Variable:** Frequency of AI Usage (**Ordinal: Never, Rarely, Sometimes, Often, Very Often**)  
 - **Statistical Test Used:** **Mann-Whitney U Test**  
@@ -123,7 +114,7 @@ fig = px.bar(crosstab,
              barmode="stack",
              title="Percentage of Job Promotions/Salary Increases by AI Usage Level",
              labels={"value": "Percentage", "variable": "Promotion/Salary Increase"},
-             color_discrete_map={"Yes": "#2E86C1", "No": "#E74C3C"})  # Blue for Yes, Red for No
+             color_discrete_map={"Yes": "#17B890", "No": "#E76F51"})  # Teal for Yes, Dark Orange for No
 
 st.plotly_chart(fig)
 
@@ -164,79 +155,9 @@ st.divider()
 
 #-------------------3------------------------#
 
-# Section: Description
-st.write("""
-### **Does Industry Type Affect Perceived Productivity Increase?**
-- **Dependent Variable:** Perceived Productivity Increase (**Scale/Continuous**)  
-- **Independent Variable:** Industry (**Nominal/Categorical**)  
-- **Statistical Test Used:** **Welch ANOVA**  
-  - Welch ANOVA is used instead of regular ANOVA because it accounts for unequal variances among groups.
-""")
-
-st.divider()
-
-### **📊 Summary Table**
-st.write("### **Summary Statistics: Productivity Increase by Industry**")
-
-# Compute summary statistics
-summary_table = df.groupby("Industry")["Perceived Increase in Productivity (%)"].agg(["mean", "std", "count"]).reset_index()
-summary_table.columns = ["Industry", "Mean Productivity Increase (%)", "Std Dev", "Count"]
-
-# Display Summary Table
-st.table(summary_table)
-
-st.divider()
-
-### **📊 Bar Chart**
-st.write("### **Visualization: Mean Productivity Increase by Industry**")
-
-fig = px.bar(summary_table, 
-             x="Industry", 
-             y="Mean Productivity Increase (%)", 
-             title="Mean Perceived Productivity Increase by Industry",
-             labels={"Mean Productivity Increase (%)": "Perceived Increase in Productivity (%)"},
-             color="Industry",
-             text="Mean Productivity Increase (%)",
-             height=500)
-
-fig.update_traces(texttemplate='%{text:.2f}%', textposition='outside')
-fig.update_layout(xaxis_tickangle=-45)
-
-st.plotly_chart(fig)
-
-st.divider()
-
-### **📊 Welch ANOVA Test**
-st.write("### **Hypothesis Testing: Welch ANOVA**")
-
-# Perform Welch ANOVA Test
-industries = df["Industry"].unique()
-grouped_data = [df[df["Industry"] == industry]["Perceived Increase in Productivity (%)"].dropna() for industry in industries]
-anova_stat, p_value = stats.f_oneway(*grouped_data)  # Welch ANOVA alternative
-
-# Display results
-st.write(f"**F-Statistic:** {anova_stat:.4f}")
-st.write(f"**P-value:** {p_value:.4f}")
 
 st.write("""
-**Interpretation:**  
-- If **p-value < 0.05**, reject the null hypothesis → **Industries have significantly different perceived productivity increases.**  
-- If **p-value ≥ 0.05**, fail to reject the null hypothesis → **No significant difference across industries.**  
-""")
-
-# Final Conclusion
-alpha = 0.05
-if p_value < alpha:
-    st.success("Conclusion: Different industries **significantly** differ in perceived productivity increase.")
-else:
-    st.warning("Conclusion: No significant difference in perceived productivity increase across industries.")
-
-st.divider()
-
-#-----------------4-------------------------------#
-
-st.write("""
-### **Does the Choice of AI Tools Depend on the Purpose of AI Usage?**
+### **Assumption: the Choice of AI Tools Depend on the Purpose of AI Usage**
 - **Variable 1:** AI Tools Used (**Categorical**)  
 - **Variable 2:** Purpose of AI Usage (**Categorical**)  
 - **Statistical Test Used:** **Chi-Square Test for Independence**  
@@ -291,3 +212,4 @@ else:
     st.warning("Conclusion: No significant relationship found between AI Tools Used and Purpose of AI Usage.")
 
 st.divider()
+
