@@ -68,7 +68,5 @@ Implementation Using Streamlit
 The entire analysis is built using Streamlit, a Python framework for creating interactive web applications.
 Interactive Visualizations using Plotly, Seaborn, and Matplotlib - python Libraries.
 Deployment on Streamlit Community
-The project is deployed on Streamlit Community Cloud, making it accessible without requiring local installations.
-=======
-# AI_Use_Analysis
->>>>>>> 4d38e5375dc416008cb2d0350972702a9cc1e573
+The project is deployed on Streamlit Community Cloud, making it accessible without requiring local installation
+
